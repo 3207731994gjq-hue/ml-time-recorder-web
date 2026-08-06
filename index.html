@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#4b2aa7">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="记录毫升">
+  <meta name="description" content="准确记录当前时间和毫升数，支持补记、统计与本地备份。">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="apple-touch-icon" href="assets/icon-1024.png">
+  <link rel="icon" href="assets/icon-1024.png">
+  <link rel="stylesheet" href="styles.css">
+  <title>毫升时间记录器</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-mark" aria-hidden="true">◆</div>
+      <div class="brand-copy">
+        <h1>毫升时间记录器</h1>
+        <p>准确到秒 · 仅保存在本机</p>
+      </div>
+      <button id="openQuickHeader" class="header-add" type="button" aria-label="快速记录">＋</button>
+    </header>
+
+    <main id="mainContent">
+      <section id="panelHome" class="panel is-active" data-panel="home" aria-labelledby="tabHome">
+        <div class="hero-card">
+          <div class="hero-copy">
+            <span class="eyebrow">实时记录当前时间</span>
+            <strong id="liveClock">00:00:00</strong>
+            <span id="liveDate">正在读取本机时间</span>
+          </div>
+          <button id="openQuickHero" class="primary-action" type="button">
+            <span class="drop-icon" aria-hidden="true">●</span>
+            <span>立即记录毫升</span>
+          </button>
+        </div>
+
+        <div class="summary-grid" aria-label="今日汇总">
+          <article class="summary-card">
+            <span>今日次数</span>
+            <strong id="todayCount">0</strong>
+            <small>准确记录数</small>
+          </article>
+          <article class="summary-card accent">
+            <span>今日总量</span>
+            <strong><span id="todayTotal">0</span><em> ml</em></strong>
+            <small>本机数据</small>
+          </article>
+        </div>
+
+        <div class="section-heading">
+          <div>
+            <h2>最近记录</h2>
+            <p id="latestHint">还没有记录</p>
+          </div>
+          <button id="openManualHome" class="text-button" type="button">补记时间</button>
+        </div>
+        <div id="recentList" class="record-list compact-list"></div>
+
+        <aside class="privacy-note">
+          <span class="privacy-icon" aria-hidden="true">✓</span>
+          <div>
+            <strong>不联网、不注册、不上传</strong>
+            <p>记录保存在当前 Safari 的本地存储中。清除浏览器网站数据前请先导出 JSON 备份。</p>
+          </div>
+        </aside>
+      </section>
+
+      <section id="panelRecords" class="panel" data-panel="records" aria-labelledby="tabRecords">
+        <div class="section-heading page-heading">
+          <div>
+            <span class="eyebrow dark">准确数值</span>
+            <h2>全部记录</h2>
+            <p id="recordCountHint">共 0 条</p>
+          </div>
+          <button id="openManualRecords" class="secondary-action" type="button">＋ 补记</button>
+        </div>
+        <div class="filter-row">
+          <label for="recordSearch" class="sr-only">搜索日期、毫升数或记录方式</label>
+          <input id="recordSearch" type="search" inputmode="search" placeholder="搜索日期、毫升数或记录方式">
+          <button id="clearSearch" class="small-button" type="button">清除</button>
+        </div>
+        <div id="recordsList" class="record-list"></div>
+      </section>
+
+      <section id="panelStats" class="panel" data-panel="stats" aria-labelledby="tabStats">
+        <div class="page-heading">
+          <span class="eyebrow dark">平均值与准确数值</span>
+          <h2>时间统计</h2>
+          <p>平均时刻使用跨午夜也准确的环形算法。</p>
+        </div>
+
+        <div id="rangeSelector" class="range-selector" role="tablist" aria-label="统计范围">
+          <button type="button" data-range="last7" class="is-active">最近7天</button>
+          <button type="button" data-range="thisWeek">本周</button>
+          <button type="button" data-range="lastWeek">上周</button>
+          <button type="button" data-range="last30">30天</button>
+          <button type="button" data-range="all">全部</button>
+        </div>
+
+        <div class="stats-grid">
+          <article class="stat-card feature-stat">
+            <span>准确总量</span>
+            <strong id="statTotal">0 ml</strong>
+            <small id="statRangeDates">—</small>
+          </article>
+          <article class="stat-card">
+            <span>准确次数</span>
+            <strong id="statCount">0 次</strong>
+            <small>范围内记录数</small>
+          </article>
+          <article class="stat-card">
+            <span>平均每次</span>
+            <strong id="statAverageAmount">—</strong>
+            <small>总毫升 ÷ 次数</small>
+          </article>
+          <article class="stat-card">
+            <span>平均时刻</span>
+            <strong id="statAverageClock">—</strong>
+            <small>精确显示到秒</small>
+          </article>
+          <article class="stat-card">
+            <span>平均间隔</span>
+            <strong id="statAverageInterval">—</strong>
+            <small>相邻记录间隔</small>
+          </article>
+          <article class="stat-card">
+            <span>每天平均次数</span>
+            <strong id="statDailyAverage">0.00 次</strong>
+            <small id="statDayCount">按 1 天计算</small>
+          </article>
+        </div>
+
+        <div class="chart-card">
+          <div class="section-heading chart-heading">
+            <div>
+              <h3>每日毫升数</h3>
+              <p>最多显示最近 30 个自然日</p>
+            </div>
+          </div>
+          <div id="dailyChart" class="daily-chart" aria-label="每日毫升数图表"></div>
+        </div>
+      </section>
+
+      <section id="panelBackup" class="panel" data-panel="backup" aria-labelledby="tabBackup">
+        <div class="page-heading">
+          <span class="eyebrow dark">保护本地数据</span>
+          <h2>备份与恢复</h2>
+          <p>网页不会把数据上传到任何服务器。</p>
+        </div>
+
+        <div class="backup-card">
+          <div class="backup-icon" aria-hidden="true">JSON</div>
+          <div>
+            <h3>完整备份</h3>
+            <p>包含准确时间、毫升数和记录方式；恢复时自动跳过重复记录。</p>
+          </div>
+          <button id="exportJson" class="primary-wide" type="button">导出 JSON 备份</button>
+          <label class="file-button" for="importJson">选择 JSON 恢复</label>
+          <input id="importJson" class="hidden-file" type="file" accept="application/json,.json">
+        </div>
+
+        <div class="backup-card compact-backup">
+          <div class="backup-icon csv" aria-hidden="true">CSV</div>
+          <div>
+            <h3>表格数据</h3>
+            <p>可用 Excel、WPS 或 Numbers 打开。</p>
+          </div>
+          <button id="exportCsv" class="secondary-wide" type="button">导出 CSV</button>
+        </div>
+
+        <div class="storage-card">
+          <div>
+            <span>当前本机记录</span>
+            <strong id="backupRecordCount">0 条</strong>
+          </div>
+          <button id="clearAll" class="danger-button" type="button">清空全部数据</button>
+        </div>
+
+        <div class="install-card">
+          <h3>添加到 iPhone 主屏幕</h3>
+          <ol>
+            <li>必须使用 Safari 打开本网页。</li>
+            <li>点 Safari 底部或顶部的“分享”按钮。</li>
+            <li>选择“添加到主屏幕”，再点“添加”。</li>
+            <li>以后点击桌面的“记录毫升”图标，会直接弹出毫升选择。</li>
+          </ol>
+        </div>
+      </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="主要功能">
+      <button id="tabHome" class="nav-item is-active" type="button" data-target="home" aria-selected="true">
+        <span aria-hidden="true">⌂</span><small>记录</small>
+      </button>
+      <button id="tabRecords" class="nav-item" type="button" data-target="records" aria-selected="false">
+        <span aria-hidden="true">≡</span><small>明细</small>
+      </button>
+      <button id="tabStats" class="nav-item" type="button" data-target="stats" aria-selected="false">
+        <span aria-hidden="true">▥</span><small>统计</small>
+      </button>
+      <button id="tabBackup" class="nav-item" type="button" data-target="backup" aria-selected="false">
+        <span aria-hidden="true">⇩</span><small>备份</small>
+      </button>
+    </nav>
+  </div>
+
+  <div id="quickModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="quickTitle" aria-hidden="true">
+    <div class="modal-backdrop" data-close="quick"></div>
+    <div class="modal-sheet amount-sheet">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="modal-heading">
+        <div>
+          <span class="eyebrow dark">记录现在</span>
+          <h2 id="quickTitle">选择毫升数</h2>
+          <p id="quickTime">确认时保存当前准确时间</p>
+        </div>
+        <button class="close-button" type="button" data-close="quick" aria-label="关闭">×</button>
+      </div>
+
+      <div class="amount-display" aria-live="polite">
+        <strong id="quickAmount">120</strong><span>ml</span>
+      </div>
+      <div class="amount-controls">
+        <button id="amountMinus" type="button" aria-label="减少10毫升">−</button>
+        <input id="amountRange" type="range" min="10" max="300" step="10" value="120" aria-label="毫升数">
+        <button id="amountPlus" type="button" aria-label="增加10毫升">＋</button>
+      </div>
+      <div class="amount-limits"><span>10 ml</span><span>每次增加 10 ml</span><span>300 ml</span></div>
+      <div class="preset-row" aria-label="常用毫升数">
+        <button type="button" data-amount="60">60</button>
+        <button type="button" data-amount="100">100</button>
+        <button type="button" data-amount="120">120</button>
+        <button type="button" data-amount="150">150</button>
+        <button type="button" data-amount="200">200</button>
+        <button type="button" data-amount="250">250</button>
+      </div>
+      <button id="confirmQuick" class="confirm-button" type="button">记录当前时间</button>
+    </div>
+  </div>
+
+  <div id="manualModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="manualTitle" aria-hidden="true">
+    <div class="modal-backdrop" data-close="manual"></div>
+    <div class="modal-sheet form-sheet">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="modal-heading">
+        <div>
+          <span class="eyebrow dark">补充或修改</span>
+          <h2 id="manualTitle">手动补记</h2>
+          <p>时间精确到秒，不能晚于现在。</p>
+        </div>
+        <button class="close-button" type="button" data-close="manual" aria-label="关闭">×</button>
+      </div>
+      <form id="manualForm" novalidate>
+        <input id="editingId" type="hidden">
+        <label class="field-label" for="manualAmount">毫升数</label>
+        <div class="stepper-field">
+          <button id="manualMinus" type="button" aria-label="减少10毫升">−</button>
+          <select id="manualAmount" aria-label="补记毫升数"></select>
+          <button id="manualPlus" type="button" aria-label="增加10毫升">＋</button>
+        </div>
+        <div class="two-fields">
+          <div>
+            <label class="field-label" for="manualDate">日期</label>
+            <input id="manualDate" type="date" required>
+          </div>
+          <div>
+            <label class="field-label" for="manualTime">时间（到秒）</label>
+            <input id="manualTime" type="time" step="1" required>
+          </div>
+        </div>
+        <p id="manualError" class="form-error" role="alert"></p>
+        <button id="saveManual" class="confirm-button" type="submit">保存补记</button>
+      </form>
+    </div>
+  </div>
+
+  <div id="confirmModal" class="modal center-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="confirm-dialog">
+      <div class="warning-icon" aria-hidden="true">!</div>
+      <h2 id="confirmTitle">确认操作</h2>
+      <p id="confirmMessage">此操作无法撤销。</p>
+      <div class="confirm-actions">
+        <button id="cancelConfirm" class="secondary-wide" type="button">取消</button>
+        <button id="acceptConfirm" class="danger-wide" type="button">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <noscript>
+    <div class="noscript">需要开启 Safari 的 JavaScript 才能记录和统计数据。</div>
+  </noscript>
+
+  <script src="logic.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

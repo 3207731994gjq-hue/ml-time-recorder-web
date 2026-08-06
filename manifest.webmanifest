@@ -1,0 +1,21 @@
+{
+  "name": "毫升时间记录器",
+  "short_name": "记录毫升",
+  "description": "记录当前时间与毫升数，支持补记、准确统计和本地备份。",
+  "lang": "zh-CN",
+  "id": "./",
+  "start_url": "./?quick=1",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#f5f3f8",
+  "theme_color": "#4b2aa7",
+  "icons": [
+    {
+      "src": "assets/icon-1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

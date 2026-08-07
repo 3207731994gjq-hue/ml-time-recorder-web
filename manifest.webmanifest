@@ -4,7 +4,7 @@
   "description": "记录毫升、益生菌、AD 和早教训练的当前时间，支持准确统计和本地备份。",
   "lang": "zh-CN",
   "id": "./",
-  "start_url": "./?quick=1",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait-primary",

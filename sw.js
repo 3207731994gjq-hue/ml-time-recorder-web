@@ -1,12 +1,12 @@
 /* Offline cache contains only this app's own static files. */
-var CACHE_NAME = "ml-time-recorder-web-v8";
+var CACHE_NAME = "ml-time-recorder-web-v9";
 var APP_SHELL = [
   "./",
   "./index.html",
-  "./styles.css?v=8",
-  "./logic.js?v=8",
-  "./app.js?v=8",
-  "./manifest.webmanifest?v=8",
+  "./styles.css?v=9",
+  "./logic.js?v=9",
+  "./app.js?v=9",
+  "./manifest.webmanifest?v=9",
   "./assets/icon-1024.png"
 ];
 

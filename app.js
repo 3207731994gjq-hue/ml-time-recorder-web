@@ -925,7 +925,7 @@
 
   function registerServiceWorker() {
     if ("serviceWorker" in navigator && (window.location.protocol === "https:" || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1")) {
-      navigator.serviceWorker.register("sw.js").catch(function () {
+      navigator.serviceWorker.register("sw.js?v=8").catch(function () {
         /* The app still works online when offline installation is unavailable. */
       });
     }

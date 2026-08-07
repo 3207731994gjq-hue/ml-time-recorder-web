@@ -4,6 +4,7 @@
   var Logic = window.MLRecorderLogic;
   var STORAGE_KEY = "ml-time-recorder.web.v1";
   var LAST_AMOUNT_KEY = "ml-time-recorder.web.lastAmount";
+  var LAST_TRAINING_GROUPS_KEY = "ml-time-recorder.web.lastTrainingGroups";
   var records = [];
   var currentRange = "last7";
   var confirmAction = null;
@@ -33,7 +34,7 @@
       window.localStorage.setItem(key, value);
       return true;
     } catch (error) {
-      showToast("保存失败，请检查 Safari 可用空间或隐私设置。", true);
+      showToast("保存失败，请检查当前浏览器的可用空间或隐私设置。", true);
       return false;
     }
   }
@@ -74,7 +75,7 @@
 
   function persistRecords() {
     var envelope = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       updatedAt: new Date().toISOString(),
       records: records
     };
@@ -94,6 +95,14 @@
 
   function setLastAmount(value) {
     safeSet(LAST_AMOUNT_KEY, String(Logic.normalizeAmount(value)));
+  }
+
+  function getLastTrainingGroups() {
+    return Logic.normalizeTrainingGroups(safeGet(LAST_TRAINING_GROUPS_KEY));
+  }
+
+  function setLastTrainingGroups(value) {
+    safeSet(LAST_TRAINING_GROUPS_KEY, String(Logic.normalizeTrainingGroups(value)));
   }
 
   function pad(value) {
@@ -118,6 +127,41 @@
     byId("liveClock").textContent = exactClock(now);
     byId("liveDate").textContent = displayDate(now);
     byId("quickTime").textContent = "确认后记录：" + Logic.exactDateTime(now);
+    byId("trainingTime").textContent = "确认后记录：" + Logic.exactDateTime(now);
+  }
+
+  function recordValueLabel(record) {
+    var type = Logic.recordType(record);
+    if (type === "milk") {
+      return record.amountMl + " ml";
+    }
+    if (type === "training") {
+      return "早教训练 " + record.groups + " 组";
+    }
+    return Logic.typeLabel(type);
+  }
+
+  function latestRecordOfType(type) {
+    var i;
+    for (i = 0; i < records.length; i += 1) {
+      if (Logic.recordType(records[i]) === type) {
+        return records[i];
+      }
+    }
+    return null;
+  }
+
+  function latestButtonText(record) {
+    var date;
+    if (!record) {
+      return "未记录";
+    }
+    date = Logic.parseRecordDate(record);
+    return "上次 " + pad(date.getMonth() + 1) + "/" + pad(date.getDate()) + " " + exactClock(date);
+  }
+
+  function latestStatText(record) {
+    return record ? "最近：" + Logic.exactDateTime(Logic.parseRecordDate(record)) : "还没有记录";
   }
 
   function showToast(message, isError) {
@@ -157,10 +201,11 @@
     var edit = document.createElement("button");
     var remove = document.createElement("button");
     var date = Logic.parseRecordDate(record);
+    var type = Logic.recordType(record);
 
-    row.className = "record-row";
+    row.className = "record-row record-row--" + type;
     row.setAttribute("data-id", record.id);
-    badge.className = "record-badge";
+    badge.className = "record-badge record-badge--" + type;
     badgeMonth.textContent = pad(date.getMonth() + 1) + "月";
     badgeDay.textContent = pad(date.getDate());
     badge.appendChild(badgeMonth);
@@ -168,7 +213,7 @@
     main.className = "record-main";
     time.className = "record-time";
     time.textContent = exactClock(date);
-    detail.textContent = date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日 · " + record.amountMl + " ml · " + record.source;
+    detail.textContent = date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日 · " + recordValueLabel(record) + " · " + record.source;
     main.appendChild(time);
     main.appendChild(detail);
     actions.className = "record-actions";
@@ -179,7 +224,9 @@
     remove.className = "delete-record";
     remove.setAttribute("data-action", "delete");
     remove.textContent = "删除";
-    actions.appendChild(edit);
+    if (type === "milk") {
+      actions.appendChild(edit);
+    }
     actions.appendChild(remove);
     row.appendChild(badge);
     row.appendChild(main);
@@ -209,7 +256,7 @@
     }
     filtered = records.filter(function (record) {
       var date = Logic.parseRecordDate(record);
-      var text = Logic.exactDateTime(date) + " " + record.amountMl + " ml " + record.source;
+      var text = Logic.exactDateTime(date) + " " + recordValueLabel(record) + " " + Logic.typeLabel(Logic.recordType(record)) + " " + record.source;
       return text.toLowerCase().indexOf(term) !== -1;
     });
     return filtered;
@@ -220,25 +267,31 @@
     var start = Logic.startOfDay(now);
     var end = Logic.addDays(start, 1);
     var todayStats = Logic.calculateStatistics(records, { start: start, end: end, dayCount: 1 });
+    var probioticToday = Logic.calculateActivitySummary(records, { start: start, end: end, dayCount: 1 }, "probiotic");
+    var adToday = Logic.calculateActivitySummary(records, { start: start, end: end, dayCount: 1 }, "ad");
+    var trainingToday = Logic.calculateActivitySummary(records, { start: start, end: end, dayCount: 1 }, "training");
     var recent = records.slice(0, 5);
-    byId("todayCount").textContent = String(todayStats.count);
+    byId("todayCount").textContent = String(todayStats.count + probioticToday.count + adToday.count + trainingToday.count);
     byId("todayTotal").textContent = String(todayStats.totalMl);
+    byId("probioticLast").textContent = latestButtonText(latestRecordOfType("probiotic"));
+    byId("adLast").textContent = latestButtonText(latestRecordOfType("ad"));
+    byId("trainingLast").textContent = latestButtonText(latestRecordOfType("training"));
     if (records.length) {
       byId("lastRecordClock").textContent = exactClock(Logic.parseRecordDate(records[0]));
-      byId("lastRecordDetail").textContent = displayDate(Logic.parseRecordDate(records[0])) + " · " + records[0].amountMl + " ml";
+      byId("lastRecordDetail").textContent = displayDate(Logic.parseRecordDate(records[0])) + " · " + recordValueLabel(records[0]);
     } else {
       byId("lastRecordClock").textContent = "--:--:--";
       byId("lastRecordDetail").textContent = "还没有记录";
     }
     byId("latestHint").textContent = recent.length ? "最近 " + recent.length + " 条，时间准确到秒" : "还没有记录";
-    renderRecordList(byId("recentList"), recent, "还没有记录", "点击“立即记录毫升”保存当前时间。 ");
+    renderRecordList(byId("recentList"), recent, "还没有记录", "点击上方按钮记录毫升、益生菌、AD 或早教训练。 ");
   }
 
   function renderRecords() {
     var filtered = searchRecords();
     var hasSearch = String(byId("recordSearch").value || "").replace(/^\s+|\s+$/g, "").length > 0;
     byId("recordCountHint").textContent = hasSearch ? "找到 " + filtered.length + " 条，共 " + records.length + " 条" : "共 " + records.length + " 条";
-    renderRecordList(byId("recordsList"), filtered, hasSearch ? "没有匹配记录" : "还没有记录", hasSearch ? "换一个日期或毫升数试试。" : "可点击右上角补记以前的时间。 ");
+    renderRecordList(byId("recordsList"), filtered, hasSearch ? "没有匹配记录" : "还没有记录", hasSearch ? "换一个日期、类型或数值试试。" : "可在首页点击对应按钮记录当前时间。 ");
   }
 
   function formatAverageAmount(value) {
@@ -298,6 +351,9 @@
     var now = new Date();
     var range = Logic.dateRange(currentRange, now, records);
     var stats = Logic.calculateStatistics(records, range);
+    var probioticStats = Logic.calculateActivitySummary(records, range, "probiotic");
+    var adStats = Logic.calculateActivitySummary(records, range, "ad");
+    var trainingStats = Logic.calculateActivitySummary(records, range, "training");
     var days = Logic.dailyTotals(records, range, 30);
     var lastIncluded = new Date(Math.max(range.start.getTime(), range.end.getTime() - 1000));
     byId("statTotal").textContent = stats.totalMl + " ml";
@@ -308,6 +364,12 @@
     byId("statDailyAverage").textContent = stats.averageDailyCount.toFixed(2) + " 次";
     byId("statDayCount").textContent = "按 " + range.dayCount + " 个自然日计算";
     byId("statRangeDates").textContent = displayRangeDate(range.start) + " — " + displayRangeDate(lastIncluded);
+    byId("statProbioticCount").textContent = probioticStats.count + " 次";
+    byId("statProbioticLatest").textContent = latestStatText(probioticStats.latest);
+    byId("statAdCount").textContent = adStats.count + " 次";
+    byId("statAdLatest").textContent = latestStatText(adStats.latest);
+    byId("statTrainingGroups").textContent = trainingStats.totalGroups + " 组";
+    byId("statTrainingLatest").textContent = trainingStats.count + " 次 · " + latestStatText(trainingStats.latest);
     renderChart(days);
   }
 
@@ -354,6 +416,8 @@
   function closeModal(name) {
     if (name === "quick") {
       setModalOpen(byId("quickModal"), false);
+    } else if (name === "training") {
+      setModalOpen(byId("trainingModal"), false);
     } else if (name === "manual") {
       setModalOpen(byId("manualModal"), false);
     }
@@ -372,6 +436,21 @@
     setQuickAmount(getLastAmount());
     updateClock();
     setModalOpen(byId("quickModal"), true);
+  }
+
+  function setTrainingGroups(value) {
+    var groups = Logic.normalizeTrainingGroups(value);
+    byId("trainingGroups").value = String(groups);
+    each(document.querySelectorAll(".training-presets button"), function (button) {
+      button.className = Number(button.getAttribute("data-groups")) === groups ? "is-selected" : "";
+    });
+  }
+
+  function openTraining() {
+    closeModal("quick");
+    setTrainingGroups(getLastTrainingGroups());
+    updateClock();
+    setModalOpen(byId("trainingModal"), true);
   }
 
   function fillAmountSelect() {
@@ -423,6 +502,48 @@
     closeModal("quick");
     renderAll();
     showToast("已记录 " + amount + " ml · " + Logic.exactDateTime(Logic.parseRecordDate(record)));
+  }
+
+  function saveSimpleActivity(type) {
+    var now = new Date();
+    var label = Logic.typeLabel(type);
+    var record = Logic.createActivityRecord(type, now, null, label + "快捷记录");
+    if (!record) {
+      showToast("这条记录无法保存，请重试。", true);
+      return;
+    }
+    records.push(record);
+    sortRecords();
+    if (!persistRecords()) {
+      records = records.filter(function (item) { return item.id !== record.id; });
+      return;
+    }
+    closeModal("quick");
+    renderAll();
+    showToast("已记录" + label + " · " + Logic.exactDateTime(Logic.parseRecordDate(record)));
+  }
+
+  function saveTrainingRecord() {
+    var groups = Number(byId("trainingGroups").value);
+    if (!Logic.isValidTrainingGroups(groups)) {
+      showToast("训练组数必须是 1–99 的整数。", true);
+      return;
+    }
+    var record = Logic.createActivityRecord("training", new Date(), { groups: groups }, "早教训练记录");
+    if (!record) {
+      showToast("训练组数必须是 1–99 的整数。", true);
+      return;
+    }
+    records.push(record);
+    sortRecords();
+    if (!persistRecords()) {
+      records = records.filter(function (item) { return item.id !== record.id; });
+      return;
+    }
+    setLastTrainingGroups(groups);
+    closeModal("training");
+    renderAll();
+    showToast("已记录早教训练 " + groups + " 组 · " + Logic.exactDateTime(Logic.parseRecordDate(record)));
   }
 
   function saveManualRecord(event) {
@@ -540,7 +661,7 @@
     if (button.getAttribute("data-action") === "edit") {
       openManual(record);
     } else {
-      askConfirmation("删除这条记录？", Logic.exactDateTime(Logic.parseRecordDate(record)) + " · " + record.amountMl + " ml。删除后无法撤销。", function () {
+      askConfirmation("删除这条记录？", Logic.exactDateTime(Logic.parseRecordDate(record)) + " · " + recordValueLabel(record) + "。删除后无法撤销。", function () {
         deleteRecord(record);
       }, "删除");
     }
@@ -552,7 +673,7 @@
 
   function backupName(extension) {
     var now = new Date();
-    return "毫升时间记录-" + Logic.localDateValue(now) + "-" + pad(now.getHours()) + pad(now.getMinutes()) + "." + extension;
+    return "宝宝时间记录-" + Logic.localDateValue(now) + "-" + pad(now.getHours()) + pad(now.getMinutes()) + "." + extension;
   }
 
   function shareOrDownload(text, mime, filename, title) {
@@ -619,27 +740,35 @@
 
   function exportJson() {
     var backup = {
-      app: "本地毫升时间记录器网页版",
-      schemaVersion: 1,
+      app: "本地宝宝时间记录器网页版",
+      schemaVersion: 2,
       exportedAt: new Date().toISOString(),
       records: records
     };
-    shareOrDownload(JSON.stringify(backup, null, 2), "application/json", backupName("json"), "毫升时间记录 JSON 备份");
+    shareOrDownload(JSON.stringify(backup, null, 2), "application/json", backupName("json"), "宝宝时间记录 JSON 备份");
   }
 
   function exportCsv() {
-    var lines = ["序号,准确日期时间,毫升数,记录方式"];
+    var lines = ["序号,记录类型,准确日期时间,数值,单位,记录方式"];
     var chronological = records.slice(0).reverse();
     var i;
+    var type;
+    var value;
+    var unit;
     for (i = 0; i < chronological.length; i += 1) {
+      type = Logic.recordType(chronological[i]);
+      value = type === "milk" ? chronological[i].amountMl : (type === "training" ? chronological[i].groups : "");
+      unit = type === "milk" ? "ml" : (type === "training" ? "组" : "");
       lines.push([
         String(i + 1),
+        csvCell(Logic.typeLabel(type)),
         csvCell(Logic.exactDateTime(Logic.parseRecordDate(chronological[i]))),
-        String(chronological[i].amountMl),
+        String(value),
+        csvCell(unit),
         csvCell(chronological[i].source)
       ].join(","));
     }
-    shareOrDownload("\uFEFF" + lines.join("\r\n"), "text/csv", backupName("csv"), "毫升时间记录 CSV");
+    shareOrDownload("\uFEFF" + lines.join("\r\n"), "text/csv", backupName("csv"), "宝宝时间记录 CSV");
   }
 
   function importJsonFile(event) {
@@ -707,6 +836,12 @@
     });
     byId("openQuickHeader").addEventListener("click", openQuick);
     byId("openQuickHero").addEventListener("click", openQuick);
+    byId("recordProbiotic").addEventListener("click", function () { saveSimpleActivity("probiotic"); });
+    byId("recordAd").addEventListener("click", function () { saveSimpleActivity("ad"); });
+    byId("openTraining").addEventListener("click", openTraining);
+    byId("recordProbioticQuick").addEventListener("click", function () { saveSimpleActivity("probiotic"); });
+    byId("recordAdQuick").addEventListener("click", function () { saveSimpleActivity("ad"); });
+    byId("openTrainingQuick").addEventListener("click", openTraining);
     byId("openManualHome").addEventListener("click", function () { openManual(null); });
     byId("openManualRecords").addEventListener("click", function () { openManual(null); });
     each(document.querySelectorAll("[data-close]"), function (button) {
@@ -720,6 +855,13 @@
       button.addEventListener("click", function () { setQuickAmount(Number(button.getAttribute("data-amount"))); });
     });
     byId("confirmQuick").addEventListener("click", saveCurrentRecord);
+    byId("trainingMinus").addEventListener("click", function () { setTrainingGroups(Number(byId("trainingGroups").value) - 1); });
+    byId("trainingPlus").addEventListener("click", function () { setTrainingGroups(Number(byId("trainingGroups").value) + 1); });
+    byId("trainingGroups").addEventListener("change", function () { setTrainingGroups(byId("trainingGroups").value); });
+    each(document.querySelectorAll(".training-presets button"), function (button) {
+      button.addEventListener("click", function () { setTrainingGroups(Number(button.getAttribute("data-groups"))); });
+    });
+    byId("confirmTraining").addEventListener("click", saveTrainingRecord);
     byId("manualMinus").addEventListener("click", function () { changeManualAmount(-10); });
     byId("manualPlus").addEventListener("click", function () { changeManualAmount(10); });
     byId("manualForm").addEventListener("submit", saveManualRecord);
@@ -770,6 +912,8 @@
       if (event.key === "Escape" || event.keyCode === 27) {
         if (byId("confirmModal").className.indexOf("is-open") !== -1) {
           closeConfirmation();
+        } else if (byId("trainingModal").className.indexOf("is-open") !== -1) {
+          closeModal("training");
         } else if (byId("manualModal").className.indexOf("is-open") !== -1) {
           closeModal("manual");
         } else if (byId("quickModal").className.indexOf("is-open") !== -1) {

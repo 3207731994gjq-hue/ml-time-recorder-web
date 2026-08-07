@@ -12,6 +12,14 @@
   var MAX_AMOUNT = 300;
   var AMOUNT_STEP = 10;
   var DAY_SECONDS = 86400;
+  var MIN_TRAINING_GROUPS = 1;
+  var MAX_TRAINING_GROUPS = 99;
+  var RECORD_TYPES = {
+    milk: true,
+    probiotic: true,
+    ad: true,
+    training: true
+  };
 
   function pad(value) {
     return value < 10 ? "0" + value : String(value);
@@ -20,6 +28,20 @@
   function isValidAmount(value) {
     var amount = Number(value);
     return isFinite(amount) && amount >= MIN_AMOUNT && amount <= MAX_AMOUNT && amount % AMOUNT_STEP === 0;
+  }
+
+  function isValidTrainingGroups(value) {
+    var groups = Number(value);
+    return isFinite(groups) && Math.floor(groups) === groups &&
+      groups >= MIN_TRAINING_GROUPS && groups <= MAX_TRAINING_GROUPS;
+  }
+
+  function normalizeTrainingGroups(value) {
+    var groups = Math.round(Number(value));
+    if (!isFinite(groups)) {
+      groups = 1;
+    }
+    return Math.min(MAX_TRAINING_GROUPS, Math.max(MIN_TRAINING_GROUPS, groups));
   }
 
   function normalizeAmount(value) {
@@ -56,18 +78,49 @@
     return isNaN(date.getTime()) ? null : toSecondPrecision(date);
   }
 
+  function recordType(record) {
+    var type = String(record && (record.type || record.kind || record.category) || "").toLowerCase();
+    if (RECORD_TYPES[type]) {
+      return type;
+    }
+    return record && isValidAmount(record.amountMl) ? "milk" : "";
+  }
+
+  function typeLabel(type) {
+    if (type === "probiotic") {
+      return "益生菌";
+    }
+    if (type === "ad") {
+      return "AD";
+    }
+    if (type === "training") {
+      return "早教训练";
+    }
+    return "毫升记录";
+  }
+
   function coerceRecord(record) {
     var date = parseRecordDate(record);
+    var type = recordType(record);
     var amount = Number(record && record.amountMl);
-    if (!date || !isValidAmount(amount)) {
+    var groups = Number(record && (record.groups || record.trainingGroups));
+    var normalized;
+    if (!date || !type || (type === "milk" && !isValidAmount(amount)) ||
+        (type === "training" && !isValidTrainingGroups(groups))) {
       return null;
     }
-    return {
+    normalized = {
       id: String(record.id || makeId()),
-      amountMl: amount,
+      type: type,
       at: date.toISOString(),
-      source: String(record.source || "当前时间记录")
+      source: String(record.source || (type === "milk" ? "当前时间记录" : typeLabel(type) + "记录"))
     };
+    if (type === "milk") {
+      normalized.amountMl = amount;
+    } else if (type === "training") {
+      normalized.groups = groups;
+    }
+    return normalized;
   }
 
   function makeId() {
@@ -81,10 +134,35 @@
     }
     return {
       id: id || makeId(),
+      type: "milk",
       amountMl: Number(amount),
       at: toSecondPrecision(date).toISOString(),
       source: source || "当前时间记录"
     };
+  }
+
+  function createActivityRecord(type, date, details, source, id) {
+    var normalizedType = String(type || "").toLowerCase();
+    var record;
+    var groups;
+    if (!RECORD_TYPES[normalizedType] || normalizedType === "milk" ||
+        !(date instanceof Date) || isNaN(date.getTime())) {
+      return null;
+    }
+    record = {
+      id: id || makeId(),
+      type: normalizedType,
+      at: toSecondPrecision(date).toISOString(),
+      source: source || typeLabel(normalizedType) + "记录"
+    };
+    if (normalizedType === "training") {
+      groups = Number(details && (details.groups || details.trainingGroups));
+      if (!isValidTrainingGroups(groups)) {
+        return null;
+      }
+      record.groups = groups;
+    }
+    return record;
   }
 
   function parseLocalDateTime(dateText, timeText) {
@@ -194,6 +272,18 @@
     return result;
   }
 
+  function recordsOfType(records, type) {
+    var result = [];
+    var values = records || [];
+    var i;
+    for (i = 0; i < values.length; i += 1) {
+      if (recordType(values[i]) === type) {
+        result.push(values[i]);
+      }
+    }
+    return result;
+  }
+
   function averageClockSeconds(records) {
     if (!records.length) {
       return null;
@@ -227,7 +317,7 @@
   }
 
   function calculateStatistics(records, range) {
-    var selected = recordsInRange(records, range);
+    var selected = recordsInRange(recordsOfType(records, "milk"), range);
     var total = 0;
     var intervalTotal = 0;
     var i;
@@ -248,6 +338,22 @@
     };
   }
 
+  function calculateActivitySummary(records, range, type) {
+    var selected = recordsInRange(recordsOfType(records, type), range);
+    var totalGroups = 0;
+    var i;
+    for (i = 0; i < selected.length; i += 1) {
+      totalGroups += type === "training" ? Number(selected[i].groups || 0) : 0;
+    }
+    return {
+      records: selected,
+      count: selected.length,
+      totalGroups: totalGroups,
+      averageClockSeconds: averageClockSeconds(selected),
+      latest: selected.length ? selected[selected.length - 1] : null
+    };
+  }
+
   function dailyTotals(records, range, maximumDays) {
     var values = [];
     var cursor = startOfDay(range.start);
@@ -259,7 +365,7 @@
     while (cursor.getTime() < range.end.getTime() && values.length < 20000) {
       next = addDays(cursor, 1);
       dayEnd = new Date(Math.min(next.getTime(), range.end.getTime()));
-      selected = recordsInRange(records, { start: cursor, end: dayEnd });
+      selected = recordsInRange(recordsOfType(records, "milk"), { start: cursor, end: dayEnd });
       total = 0;
       for (i = 0; i < selected.length; i += 1) {
         total += Number(selected[i].amountMl);
@@ -305,17 +411,26 @@
 
   function recordKey(record) {
     var date = parseRecordDate(record);
-    return (date ? Math.floor(date.getTime() / 1000) : 0) + "|" + record.amountMl + "|" + record.source;
+    var type = recordType(record);
+    var value = type === "milk" ? record.amountMl : (type === "training" ? record.groups : "");
+    return (date ? Math.floor(date.getTime() / 1000) : 0) + "|" + type + "|" + value + "|" + record.source;
   }
 
   return {
     MIN_AMOUNT: MIN_AMOUNT,
     MAX_AMOUNT: MAX_AMOUNT,
     AMOUNT_STEP: AMOUNT_STEP,
+    MIN_TRAINING_GROUPS: MIN_TRAINING_GROUPS,
+    MAX_TRAINING_GROUPS: MAX_TRAINING_GROUPS,
     isValidAmount: isValidAmount,
     normalizeAmount: normalizeAmount,
+    isValidTrainingGroups: isValidTrainingGroups,
+    normalizeTrainingGroups: normalizeTrainingGroups,
     createRecord: createRecord,
+    createActivityRecord: createActivityRecord,
     coerceRecord: coerceRecord,
+    recordType: recordType,
+    typeLabel: typeLabel,
     parseRecordDate: parseRecordDate,
     parseLocalDateTime: parseLocalDateTime,
     localDateValue: localDateValue,
@@ -328,6 +443,8 @@
     startOfWeek: startOfWeek,
     dateRange: dateRange,
     calculateStatistics: calculateStatistics,
+    calculateActivitySummary: calculateActivitySummary,
+    recordsOfType: recordsOfType,
     dailyTotals: dailyTotals,
     averageClockSeconds: averageClockSeconds,
     formatClockSeconds: formatClockSeconds,

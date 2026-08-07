@@ -1,5 +1,5 @@
 /* Offline cache contains only this app's own static files. */
-var CACHE_NAME = "ml-time-recorder-web-v4";
+var CACHE_NAME = "ml-time-recorder-web-v6";
 var APP_SHELL = [
   "./",
   "./index.html",
@@ -52,18 +52,20 @@ self.addEventListener("fetch", function (event) {
     return;
   }
   event.respondWith(
-    caches.match(request).then(function (cached) {
-      if (cached) {
-        return cached;
+    fetch(request).then(function (response) {
+      if (!response || response.status !== 200 || response.type === "opaque") {
+        return response;
       }
-      return fetch(request).then(function (response) {
-        if (!response || response.status !== 200 || response.type === "opaque") {
-          return response;
+      return caches.open(CACHE_NAME).then(function (cache) {
+        cache.put(request, response.clone());
+        return response;
+      });
+    }).catch(function () {
+      return caches.match(request).then(function (cached) {
+        if (cached) {
+          return cached;
         }
-        return caches.open(CACHE_NAME).then(function (cache) {
-          cache.put(request, response.clone());
-          return response;
-        });
+        return caches.match("./index.html");
       });
     })
   );

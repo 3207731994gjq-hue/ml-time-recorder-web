@@ -7,20 +7,20 @@
   <meta name="format-detection" content="telephone=no">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="记录毫升">
-  <meta name="description" content="准确记录当前时间和毫升数，支持补记、统计与本地备份。">
+  <meta name="apple-mobile-web-app-title" content="宝宝记录">
+  <meta name="description" content="准确记录毫升、益生菌、AD 和早教训练时间，支持统计与本地备份。">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="apple-touch-icon" href="assets/icon-1024.png">
   <link rel="icon" href="assets/icon-1024.png">
   <link rel="stylesheet" href="styles.css">
-  <title>毫升时间记录器</title>
+  <title>宝宝时间记录器</title>
 </head>
 <body>
   <div class="app-shell">
     <header class="topbar">
       <div class="brand-mark" aria-hidden="true">◆</div>
       <div class="brand-copy">
-        <h1>毫升时间记录器</h1>
+        <h1>宝宝时间记录器</h1>
         <p>准确到秒 · 仅保存在本机</p>
       </div>
       <button id="openQuickHeader" class="header-add" type="button" aria-label="快速记录">＋</button>
@@ -40,14 +40,41 @@
           </button>
         </div>
 
+        <div class="activity-actions" aria-label="一键记录">
+          <button id="recordProbiotic" class="activity-action probiotic-action" type="button">
+            <span class="activity-icon" aria-hidden="true">菌</span>
+            <span class="activity-copy">
+              <strong>益生菌</strong>
+              <small>点击立即记录当前时间</small>
+            </span>
+            <span id="probioticLast" class="activity-last">未记录</span>
+          </button>
+          <button id="recordAd" class="activity-action ad-action" type="button">
+            <span class="activity-icon" aria-hidden="true">AD</span>
+            <span class="activity-copy">
+              <strong>AD</strong>
+              <small>点击立即记录当前时间</small>
+            </span>
+            <span id="adLast" class="activity-last">未记录</span>
+          </button>
+          <button id="openTraining" class="activity-action training-action" type="button">
+            <span class="activity-icon" aria-hidden="true">教</span>
+            <span class="activity-copy">
+              <strong>早教训练</strong>
+              <small>设置组数并记录当前时间</small>
+            </span>
+            <span id="trainingLast" class="activity-last">未记录</span>
+          </button>
+        </div>
+
         <div class="summary-grid" aria-label="今日汇总">
           <article class="summary-card">
-            <span>今日次数</span>
+            <span>今日全部记录</span>
             <strong id="todayCount">0</strong>
-            <small>准确记录数</small>
+            <small>四种类型合计</small>
           </article>
           <article class="summary-card accent">
-            <span>今日总量</span>
+            <span>今日奶量</span>
             <strong><span id="todayTotal">0</span><em> ml</em></strong>
             <small>本机数据</small>
           </article>
@@ -67,7 +94,7 @@
             <h2>最近记录</h2>
             <p id="latestHint">还没有记录</p>
           </div>
-          <button id="openManualHome" class="text-button" type="button">补记时间</button>
+          <button id="openManualHome" class="text-button" type="button">补记毫升</button>
         </div>
         <div id="recentList" class="record-list compact-list"></div>
 
@@ -83,15 +110,15 @@
       <section id="panelRecords" class="panel" data-panel="records" aria-labelledby="tabRecords">
         <div class="section-heading page-heading">
           <div>
-            <span class="eyebrow dark">准确数值</span>
+            <span class="eyebrow dark">全部类型 · 准确到秒</span>
             <h2>全部记录</h2>
             <p id="recordCountHint">共 0 条</p>
           </div>
-          <button id="openManualRecords" class="secondary-action" type="button">＋ 补记</button>
+          <button id="openManualRecords" class="secondary-action" type="button">＋ 补记毫升</button>
         </div>
         <div class="filter-row">
-          <label for="recordSearch" class="sr-only">搜索日期、毫升数或记录方式</label>
-          <input id="recordSearch" type="search" inputmode="search" placeholder="搜索日期、毫升数或记录方式">
+          <label for="recordSearch" class="sr-only">搜索日期、毫升数、益生菌、AD 或早教训练</label>
+          <input id="recordSearch" type="search" inputmode="search" placeholder="搜索毫升、益生菌、AD、早教训练">
           <button id="clearSearch" class="small-button" type="button">清除</button>
         </div>
         <div id="recordsList" class="record-list"></div>
@@ -114,34 +141,58 @@
 
         <div class="stats-grid">
           <article class="stat-card time-focus-stat">
-            <span>平均记录时刻</span>
+            <span>平均喂奶时刻</span>
             <strong id="statAverageClock">—</strong>
-            <small>所选范围内的平均时刻 · 精确到秒</small>
+            <small>所选范围内毫升记录的平均时刻 · 精确到秒</small>
           </article>
           <article class="stat-card">
-            <span>准确总量</span>
+            <span>奶量准确总量</span>
             <strong id="statTotal">0 ml</strong>
             <small id="statRangeDates">—</small>
           </article>
           <article class="stat-card">
-            <span>准确次数</span>
+            <span>喂奶准确次数</span>
             <strong id="statCount">0 次</strong>
-            <small>范围内记录数</small>
+            <small>范围内毫升记录数</small>
           </article>
           <article class="stat-card">
-            <span>平均每次</span>
+            <span>平均每次奶量</span>
             <strong id="statAverageAmount">—</strong>
             <small>总毫升 ÷ 次数</small>
           </article>
           <article class="stat-card">
-            <span>平均间隔</span>
+            <span>平均喂奶间隔</span>
             <strong id="statAverageInterval">—</strong>
             <small>相邻记录间隔</small>
           </article>
           <article class="stat-card">
-            <span>每天平均次数</span>
+            <span>每天平均喂奶次数</span>
             <strong id="statDailyAverage">0.00 次</strong>
             <small id="statDayCount">按 1 天计算</small>
+          </article>
+        </div>
+
+        <div class="section-heading activity-stat-heading">
+          <div>
+            <h3>其他记录统计</h3>
+            <p>次数、组数以及最近一次准确时间</p>
+          </div>
+        </div>
+        <div class="activity-stats-grid">
+          <article class="activity-stat-card probiotic-stat">
+            <span>益生菌</span>
+            <strong id="statProbioticCount">0 次</strong>
+            <small id="statProbioticLatest">还没有记录</small>
+          </article>
+          <article class="activity-stat-card ad-stat">
+            <span>AD</span>
+            <strong id="statAdCount">0 次</strong>
+            <small id="statAdLatest">还没有记录</small>
+          </article>
+          <article class="activity-stat-card training-stat">
+            <span>早教训练</span>
+            <strong id="statTrainingGroups">0 组</strong>
+            <small id="statTrainingLatest">0 次 · 还没有记录</small>
           </article>
         </div>
 
@@ -167,7 +218,7 @@
           <div class="backup-icon" aria-hidden="true">JSON</div>
           <div>
             <h3>完整备份</h3>
-            <p>包含准确时间、毫升数和记录方式；恢复时自动跳过重复记录。</p>
+            <p>包含全部类型、准确时间、毫升数和训练组数；恢复时自动跳过重复记录。</p>
           </div>
           <button id="exportJson" class="primary-wide" type="button">导出 JSON 备份</button>
           <label class="file-button" for="importJson">选择 JSON 恢复</label>
@@ -197,7 +248,7 @@
             <li>必须使用 Safari 打开本网页。</li>
             <li>点 Safari 底部或顶部的“分享”按钮。</li>
             <li>选择“添加到主屏幕”，再点“添加”。</li>
-            <li>以后点击桌面的“记录毫升”图标，会直接弹出毫升选择。</li>
+            <li>以后点击桌面的“宝宝记录”图标，可以记录毫升、益生菌、AD 和早教训练。</li>
           </ol>
         </div>
       </section>
@@ -250,6 +301,45 @@
         <button type="button" data-amount="250">250</button>
       </div>
       <button id="confirmQuick" class="confirm-button" type="button">记录当前时间</button>
+      <p class="quick-other-title">也可以直接记录</p>
+      <div class="quick-other-actions">
+        <button id="recordProbioticQuick" type="button">益生菌</button>
+        <button id="recordAdQuick" type="button">AD</button>
+        <button id="openTrainingQuick" type="button">早教训练</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="trainingModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="trainingTitle" aria-hidden="true">
+    <div class="modal-backdrop" data-close="training"></div>
+    <div class="modal-sheet training-sheet">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="modal-heading">
+        <div>
+          <span class="eyebrow dark">记录现在</span>
+          <h2 id="trainingTitle">早教训练组数</h2>
+          <p id="trainingTime" class="quick-exact-time">确认后记录当前准确时间</p>
+        </div>
+        <button class="close-button" type="button" data-close="training" aria-label="关闭">×</button>
+      </div>
+      <div class="training-group-control">
+        <button id="trainingMinus" type="button" aria-label="减少1组">−</button>
+        <label for="trainingGroups">
+          <input id="trainingGroups" type="number" min="1" max="99" step="1" value="1" inputmode="numeric" aria-label="早教训练组数">
+          <span>组</span>
+        </label>
+        <button id="trainingPlus" type="button" aria-label="增加1组">＋</button>
+      </div>
+      <div class="preset-row training-presets" aria-label="常用训练组数">
+        <button type="button" data-groups="1">1组</button>
+        <button type="button" data-groups="2">2组</button>
+        <button type="button" data-groups="3">3组</button>
+        <button type="button" data-groups="4">4组</button>
+        <button type="button" data-groups="5">5组</button>
+        <button type="button" data-groups="6">6组</button>
+      </div>
+      <p class="training-help">可记录 1–99 组，时间以点击确认的时刻为准。</p>
+      <button id="confirmTraining" class="confirm-button" type="button">记录早教训练</button>
     </div>
   </div>
 

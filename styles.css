@@ -192,17 +192,64 @@ select:focus {
 .hero-copy strong {
   display: block;
   margin-top: 10px;
-  font-size: 48px;
+  font-size: 56px;
   line-height: 1;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 4px 18px rgba(21, 10, 64, 0.22);
 }
 
 .hero-copy > span:last-child {
   display: block;
   margin-top: 7px;
   color: rgba(255, 255, 255, 0.76);
-  font-size: 13px;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.last-time-card {
+  margin-top: 13px;
+  padding: 18px 20px 17px;
+  border: 1px solid rgba(100, 58, 188, 0.12);
+  border-radius: 21px;
+  color: var(--purple-dark);
+  background: linear-gradient(135deg, #ffffff, #f1eafd);
+  -webkit-box-shadow: 0 9px 24px rgba(62, 36, 105, 0.08);
+  box-shadow: 0 9px 24px rgba(62, 36, 105, 0.08);
+}
+
+.last-time-heading {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: justify;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.last-time-heading small {
+  color: var(--purple);
+}
+
+.last-time-card > strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 40px;
+  line-height: 1;
+  letter-spacing: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.last-time-card > p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .eyebrow {
@@ -364,7 +411,7 @@ select:focus {
   -webkit-box-align: center;
   -ms-flex-align: center;
   align-items: center;
-  min-height: 76px;
+  min-height: 88px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -379,6 +426,10 @@ select:focus {
   display: -webkit-box;
   display: -ms-flexbox;
   display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
   -webkit-box-align: center;
   -ms-flex-align: center;
   align-items: center;
@@ -387,10 +438,21 @@ select:focus {
   justify-content: center;
   background: var(--purple-soft);
   color: var(--purple);
-  font-weight: 850;
-  font-size: 12px;
   -ms-flex-negative: 0;
   flex-shrink: 0;
+}
+
+.record-badge span {
+  font-size: 9px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.record-badge strong {
+  margin-top: 3px;
+  font-size: 17px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .record-main {
@@ -403,7 +465,10 @@ select:focus {
 
 .record-main strong {
   display: block;
-  font-size: 16px;
+  color: var(--purple-dark);
+  font-size: 25px;
+  line-height: 1;
+  letter-spacing: 1px;
   font-variant-numeric: tabular-nums;
 }
 
@@ -615,6 +680,27 @@ select:focus {
 .feature-stat > span,
 .feature-stat small {
   color: rgba(255, 255, 255, 0.74);
+}
+
+.time-focus-stat {
+  grid-column: 1 / -1;
+  min-height: 137px;
+  color: #fff;
+  background: linear-gradient(145deg, #2f176d, #6d36c4 58%, #8a2ab1);
+  -webkit-box-shadow: 0 12px 28px rgba(69, 35, 135, 0.24);
+  box-shadow: 0 12px 28px rgba(69, 35, 135, 0.24);
+}
+
+.time-focus-stat > span,
+.time-focus-stat small {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.time-focus-stat strong {
+  margin-top: 13px;
+  font-size: 42px;
+  letter-spacing: 2px;
+  overflow-wrap: normal;
 }
 
 .chart-card {
@@ -984,6 +1070,38 @@ select:focus {
   margin: 5px 0 0;
   color: var(--muted);
   font-size: 12px;
+}
+
+.modal-heading .quick-exact-time {
+  margin-top: 8px;
+  color: var(--purple-dark);
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 350px) {
+  .hero-copy strong {
+    font-size: 48px;
+  }
+
+  .last-time-card > strong {
+    font-size: 36px;
+  }
+
+  .record-main strong {
+    font-size: 22px;
+  }
+
+  .record-actions {
+    margin-left: 4px;
+  }
+
+  .record-actions button {
+    width: 33px;
+    margin-left: 3px;
+  }
 }
 
 .close-button {

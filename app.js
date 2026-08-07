@@ -148,8 +148,10 @@
   function recordRow(record) {
     var row = document.createElement("article");
     var badge = document.createElement("div");
+    var badgeMonth = document.createElement("span");
+    var badgeDay = document.createElement("strong");
     var main = document.createElement("div");
-    var amount = document.createElement("strong");
+    var time = document.createElement("strong");
     var detail = document.createElement("span");
     var actions = document.createElement("div");
     var edit = document.createElement("button");
@@ -159,11 +161,15 @@
     row.className = "record-row";
     row.setAttribute("data-id", record.id);
     badge.className = "record-badge";
-    badge.textContent = pad(date.getDate());
+    badgeMonth.textContent = pad(date.getMonth() + 1) + "月";
+    badgeDay.textContent = pad(date.getDate());
+    badge.appendChild(badgeMonth);
+    badge.appendChild(badgeDay);
     main.className = "record-main";
-    amount.textContent = record.amountMl + " ml";
-    detail.textContent = Logic.exactDateTime(date) + " · " + record.source;
-    main.appendChild(amount);
+    time.className = "record-time";
+    time.textContent = exactClock(date);
+    detail.textContent = date.getFullYear() + "年" + (date.getMonth() + 1) + "月" + date.getDate() + "日 · " + record.amountMl + " ml · " + record.source;
+    main.appendChild(time);
     main.appendChild(detail);
     actions.className = "record-actions";
     edit.type = "button";
@@ -217,6 +223,13 @@
     var recent = records.slice(0, 5);
     byId("todayCount").textContent = String(todayStats.count);
     byId("todayTotal").textContent = String(todayStats.totalMl);
+    if (records.length) {
+      byId("lastRecordClock").textContent = exactClock(Logic.parseRecordDate(records[0]));
+      byId("lastRecordDetail").textContent = displayDate(Logic.parseRecordDate(records[0])) + " · " + records[0].amountMl + " ml";
+    } else {
+      byId("lastRecordClock").textContent = "--:--:--";
+      byId("lastRecordDetail").textContent = "还没有记录";
+    }
     byId("latestHint").textContent = recent.length ? "最近 " + recent.length + " 条，时间准确到秒" : "还没有记录";
     renderRecordList(byId("recentList"), recent, "还没有记录", "点击“立即记录毫升”保存当前时间。 ");
   }

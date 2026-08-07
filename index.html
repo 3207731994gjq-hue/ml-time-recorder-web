@@ -53,6 +53,15 @@
           </article>
         </div>
 
+        <article class="last-time-card" aria-label="上次记录时间">
+          <div class="last-time-heading">
+            <span>上次记录时间</span>
+            <small>准确到秒</small>
+          </div>
+          <strong id="lastRecordClock">--:--:--</strong>
+          <p id="lastRecordDetail">还没有记录</p>
+        </article>
+
         <div class="section-heading">
           <div>
             <h2>最近记录</h2>
@@ -66,7 +75,7 @@
           <span class="privacy-icon" aria-hidden="true">✓</span>
           <div>
             <strong>不联网、不注册、不上传</strong>
-            <p>记录保存在当前 Safari 的本地存储中。清除浏览器网站数据前请先导出 JSON 备份。</p>
+            <p>记录保存在当前浏览器的本地存储中。清除微信或 Safari 网站数据前请先导出 JSON 备份。</p>
           </div>
         </aside>
       </section>
@@ -104,7 +113,12 @@
         </div>
 
         <div class="stats-grid">
-          <article class="stat-card feature-stat">
+          <article class="stat-card time-focus-stat">
+            <span>平均记录时刻</span>
+            <strong id="statAverageClock">—</strong>
+            <small>所选范围内的平均时刻 · 精确到秒</small>
+          </article>
+          <article class="stat-card">
             <span>准确总量</span>
             <strong id="statTotal">0 ml</strong>
             <small id="statRangeDates">—</small>
@@ -118,11 +132,6 @@
             <span>平均每次</span>
             <strong id="statAverageAmount">—</strong>
             <small>总毫升 ÷ 次数</small>
-          </article>
-          <article class="stat-card">
-            <span>平均时刻</span>
-            <strong id="statAverageClock">—</strong>
-            <small>精确显示到秒</small>
           </article>
           <article class="stat-card">
             <span>平均间隔</span>
@@ -218,7 +227,7 @@
         <div>
           <span class="eyebrow dark">记录现在</span>
           <h2 id="quickTitle">选择毫升数</h2>
-          <p id="quickTime">确认时保存当前准确时间</p>
+          <p id="quickTime" class="quick-exact-time">确认时保存当前准确时间</p>
         </div>
         <button class="close-button" type="button" data-close="quick" aria-label="关闭">×</button>
       </div>

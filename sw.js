@@ -1,5 +1,5 @@
 /* Offline cache contains only this app's own static files. */
-var CACHE_NAME = "ml-time-recorder-web-v3";
+var CACHE_NAME = "ml-time-recorder-web-v4";
 var APP_SHELL = [
   "./",
   "./index.html",
